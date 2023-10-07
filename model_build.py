@@ -1,6 +1,6 @@
 from intern_image import InternImage
 from view_transformer import LSSViewTransformer, LSSViewTransformerBEVDepth
-pretrained = '/content/drive/MyDrive/GNDetFusion/GNDetFusion/LSSVTransformer/bev_pool_v2/backbone_checkpoint.pth' 
+pretrained = 'backbone_checkpoint.pth' 
 intern_image_model = InternImage(
         core_op='DCNv3',
         channels=112,
@@ -191,7 +191,7 @@ print("---------------------------------------")
 
 import numpy as np
 import onnxruntime as ort
-model_path = "/content/drive/MyDrive/GNDetFusion/GNDetFusion/LSSVTransformer/hvdet_fuse_stage1.onnx"
+model_path = "hvdet_fuse_stage1.onnx"
 session1 = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
 ################ONNX-DEPTHNET###########################
 backbone_out0 = out0
@@ -222,7 +222,7 @@ inputs = [sess1_out_img_feat, rot, tran, intrin, post_rot, post_tran, bda, mlp_i
 bev_feat, _ = view_transformer.view_transform(inputs, sess1_out_depth, sess1_out_tran_feat)
 
 bev_feat_list = []
-model_path1 = "/content/drive/MyDrive/GNDetFusion/GNDetFusion/LSSVTransformer/hvdet_fuse_stage1_1.onnx"
+model_path1 = "hvdet_fuse_stage1_1.onnx"
 session1_1 = ort.InferenceSession(model_path, providers=['CUDAExecutionProvider','CPUExecutionProvider'])
 
 sess1_1_bev_feat = session1_1.run(['out_bev_feat'],
@@ -235,7 +235,7 @@ print("----------------------------------")
 print("stage1_1:",multi_bev_feat.shape)
 print("----------------------------------")
 output_names=['bev_feat'] + [f'output_{j}' for j in range(36)]
-# model_path2 = "/Users/GOKULNATH/Desktop/hvd/data/sets/nuscenes/hvdet_fuse_stage2.onnx"
+# model_path2 = "hvdet_fuse_stage2.onnx"
 # session2 = ort.InferenceSession(model_path, providers=['CUDAExecutionProvider','CPUExecutionProvider'])
 
 
