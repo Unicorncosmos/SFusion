@@ -51,8 +51,8 @@ if __name__ == '__main__':
                 name='bev_pool_v2_ext',
                 module='/SFusion',
                 sources=[
-                    'src/bev_pool.cpp',
-                    'src/bev_pool_cuda.cu',
+                    '/content/SFusion/src/bev_pool.cpp',
+                    '/content/SFusion/src/bev_pool_cuda.cu',
                 ],
             ),
         ],
