@@ -112,6 +112,12 @@ class LSSViewTransformer(BaseModule):
                 (B, N_cams, D, ownsample, 3)
         """
         B, N, _ = trans.shape
+        device = rots.device
+        trans = trans.to(device)
+        cam2imgs = cam2imgs.to(device)
+        post_rots = post_rots.to(device)
+        post_trans = post_trans.to(device)
+        bda = bda.to(device)
 
         # post-transformation
         # B x N x D x H x W x 3
@@ -235,28 +241,32 @@ class LSSViewTransformerBEVDepth(LSSViewTransformer):
         super(LSSViewTransformerBEVDepth, self).__init__(**kwargs)
 
     def get_mlp_input(self, rot, tran, intrin, post_rot, post_tran, bda):
+        device = rot.device
         B, N, _, _ = rot.shape
-        bda = bda.view(B, 1, 3, 3).repeat(1, N, 1, 1)
+        bda = bda.view(B, 1, 3, 3).repeat(1, N, 1, 1).to(device)
         mlp_input = torch.stack([
-            intrin[:, :, 0, 0],
-            intrin[:, :, 1, 1],
-            intrin[:, :, 0, 2],
-            intrin[:, :, 1, 2],
-            post_rot[:, :, 0, 0],
-            post_rot[:, :, 0, 1],
-            post_tran[:, :, 0],
-            post_rot[:, :, 1, 0],
-            post_rot[:, :, 1, 1],
-            post_tran[:, :, 1],
-            bda[:, :, 0, 0],
-            bda[:, :, 0, 1],
-            bda[:, :, 1, 0],
-            bda[:, :, 1, 1],
-            bda[:, :, 2, 2],
+            intrin[:, :, 0, 0].to(device),
+            intrin[:, :, 1, 1].to(device),
+            intrin[:, :, 0, 2].to(device),
+            intrin[:, :, 1, 2].to(device),
+            post_rot[:, :, 0, 0].to(device),
+            post_rot[:, :, 0, 1].to(device),
+            post_tran[:, :, 0].to(device),
+            post_rot[:, :, 1, 0].to(device),
+            post_rot[:, :, 1, 1].to(device),
+            post_tran[:, :, 1].to(device),
+            bda[:, :, 0, 0].to(device),
+            bda[:, :, 0, 1].to(device),
+            bda[:, :, 1, 0].to(device),
+            bda[:, :, 1, 1].to(device),
+            bda[:, :, 2, 2].to(device),
         ],
-                                dim=-1)
+                                dim=-1).to(device)
+
         sensor2ego = torch.cat([rot, tran.reshape(B, N, 3, 1)],
-                               dim=-1).reshape(B, N, -1)
-        mlp_input = torch.cat([mlp_input, sensor2ego], dim=-1)
+                               dim=-1).reshape(B, N, -1).to(device)
+
+        mlp_input = torch.cat([mlp_input, sensor2ego], dim=-1).to(device)
+
         return mlp_input
 
