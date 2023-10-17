@@ -1,6 +1,6 @@
 from intern_image import InternImage
 from view_transformer import LSSViewTransformer, LSSViewTransformerBEVDepth
-pretrained = 'backbone_checkpoint.pth' 
+pretrained = 'backbone.pth' 
 intern_image_model = InternImage(
         core_op='DCNv3',
         channels=112,
@@ -177,14 +177,16 @@ print("---------------------------------------")
 
 # Assuming 'model' is your LSSViewTransformerBEVDepth model
 with torch.no_grad():
-    rot = rots[0]
-    tran = trans[0]
-    intrin = intrins[0]
-    post_rot = post_rots[0]
-    post_tran = post_trans[0]
+    rot = rots[0].to(device)  # Ensure 'rot' is on the correct device
+    tran = trans[0].to(device)  # Ensure 'tran' is on the correct device
+    intrin = intrins[0].to(device)  # Ensure 'intrin' is on the correct device
+    post_rot = post_rots[0].to(device)  # Ensure 'post_rot' is on the correct device
+    post_tran = post_trans[0].to(device)  # Ensure 'post_tran' is on the correct device
     output = view_transformer.get_mlp_input(
         rot, tran, intrin, post_rot, post_tran, bda
     )
+output = output.to(device)
+
 print("---------------------------------------")
 print("mlp_input:", output.shape)
 print("---------------------------------------")
@@ -196,14 +198,13 @@ session1 = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
 ################ONNX-DEPTHNET###########################
 backbone_out0 = out0
 backbone_out1 = out1
-mlp_input = output.cpu().numpy()
+mlp_input = output.to(device)
 # Prepare the input data as a dictionary
 input_data = {
     'backbone_out0': backbone_out0,
     'backbone_out1': backbone_out1,
-    'mlp_input': mlp_input,
+    'mlp_input': mlp_input.cpu().numpy(),  # Now it's a NumPy array
 }
-
 sess1_out_img_feat, sess1_out_depth, sess1_out_tran_feat = session1.run(
     ['img_feat', 'depth', 'tran_feat'], input_data)
 print("------------------------------------------------------")    
@@ -217,36 +218,40 @@ sess1_out_depth = torch.tensor(sess1_out_depth).to(rot.device)
 print("depth:",sess1_out_depth.shape)
 sess1_out_tran_feat = torch.tensor(sess1_out_tran_feat).to(rot.device)
 print("tran_feature:",sess1_out_tran_feat.shape)
-cu
+print("--------------------------------------------------------------")
+sess1_out_img_feat = torch.tensor(sess1_out_img_feat).to(rot.device)
+sess1_out_depth = torch.tensor(sess1_out_depth).to(rot.device)
+sess1_out_tran_feat = torch.tensor(sess1_out_tran_feat).to(rot.device)
+
 inputs = [sess1_out_img_feat, rot, tran, intrin, post_rot, post_tran, bda, mlp_input]
+
 bev_feat, _ = view_transformer.view_transform(inputs, sess1_out_depth, sess1_out_tran_feat)
 
 bev_feat_list = []
 model_path1 = "hvdet_fuse_stage1_1.onnx"
-session1_1 = ort.InferenceSession(model_path, providers=['CUDAExecutionProvider','CPUExecutionProvider'])
+session1_1 = ort.InferenceSession(model_path1, providers=['CUDAExecutionProvider','CPUExecutionProvider'])
 
 sess1_1_bev_feat = session1_1.run(['out_bev_feat'],
                                                         {'bev_feat': bev_feat.cpu().numpy()})
 bev_feat_list.append(sess1_1_bev_feat[0])
-
 
 multi_bev_feat = np.concatenate(bev_feat_list, axis=1)
 print("----------------------------------")
 print("stage1_1:",multi_bev_feat.shape)
 print("----------------------------------")
 output_names=['bev_feat'] + [f'output_{j}' for j in range(36)]
-# model_path2 = "hvdet_fuse_stage2.onnx"
-# session2 = ort.InferenceSession(model_path, providers=['CUDAExecutionProvider','CPUExecutionProvider'])
+model_path2 = "hvdet_fuse_stage2.onnx"
+session2 = ort.InferenceSession(model_path2, providers=['CUDAExecutionProvider','CPUExecutionProvider'])
 
 
-# sess2_out = session2.run(output_names, 
-#                                             {
-#                                             'multi_bev_feat':multi_bev_feat,
-#                                             }) 
-# for i in range(len(sess2_out)):
-#   sess2_out[i] = torch.tensor(sess2_out[i]).cuda()
-# bev_feat = sess2_out[0]
-# pts_outs = sess2_out[1:]
+sess2_out = session2.run(output_names, 
+                                            {
+                                            'multi_bev_feat':multi_bev_feat,
+                                            }) 
+for i in range(len(sess2_out)):
+  sess2_out[i] = torch.tensor(sess2_out[i]).cuda()
+bev_feat = sess2_out[0]
+pts_outs = sess2_out[1:]
 
 
 
