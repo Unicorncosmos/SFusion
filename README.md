@@ -1,5 +1,5 @@
 # SFusion
-#Interimage + LSSViewTransformer + Depthnet
+#Interimage + LSSViewTransformer + stage1 + stage2
 
 **Step 1.** Install requirement
 ```shell
