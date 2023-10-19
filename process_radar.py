@@ -313,7 +313,7 @@ class RadarPointCloudWithVelocity(RadarPointCloud):
 
 
 def get_valid_radar_feat(outputs, radar_pc, cfg):
-    bbox_num = cfg["box_num"]
+    bbox_num = cfg["bbox_num"]
     ## Calculate values for the new pc_hm
     # radar-pc: b * n * 5
     # convert to bev grid
