@@ -40,6 +40,40 @@ grid_config = {
     'z': [-5, 3, 8],
     'depth': [1.0, 60.0, 0.5],
 }
+voxel_size = [0.1, 0.1, 0.2]
+
+numC_Trans = 128
+
+multi_adj_frame_id_cfg = (1, 8, 8, 1)
+num_adj = len(range(
+    multi_adj_frame_id_cfg[0],
+    multi_adj_frame_id_cfg[1]+multi_adj_frame_id_cfg[2]+1,
+    multi_adj_frame_id_cfg[3]
+))
+out_size_factor = 4
+point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
+radar_cfg = {
+    'bbox_num': 100,
+    'radar_fusion_type': "medium_fusion",  # in ['post_fusion', 'medium_fusion']
+    'voxel_size': voxel_size,
+    'out_size_factor': out_size_factor,
+    'point_cloud_range': point_cloud_range,
+    'grid_config': grid_config,
+    'norm_bbox': True,  
+    'pc_roi_method': 'pillars',
+    'img_feats_bbox_dims': [1, 1, 0.5],
+    'pillar_dims': [0.4, 0.4, 0.1],
+    'pc_feat_name': ['pc_x', 'pc_y', 'pc_vx', 'pc_vy'],
+    'hm_to_box_ratio': 1.0,
+    'time_debug': False,
+    'radar_head_task': [
+            dict(num_class=1, class_names=['car']),
+            dict(num_class=2, class_names=['truck', 'construction_vehicle']),
+            dict(num_class=2, class_names=['bus', 'trailer']),
+            dict(num_class=1, class_names=['barrier']),
+            dict(num_class=2, class_names=['motorcycle', 'bicycle']),
+        ]
+}
 
 input_size=data_config['input_size']
 in_channels=512
@@ -253,5 +287,42 @@ for i in range(len(sess2_out)):
 bev_feat = sess2_out[0]
 pts_outs = sess2_out[1:]
 
+def pts_head_result_deserialize(self, outs):
+        outs_ = []
+        keys = ['reg', 'height', 'dim', 'rot', 'vel', 'heatmap']
+        for head_id in range(len(outs) // 6):
+            outs_head = [dict()]
+            for kid, key in enumerate(keys):
+                outs_head[0][key] = outs[head_id * 6 + kid]
+            outs_.append(outs_head)
+        return outs_
+
+from process_radar import get_valid_radar_feat 
+
+def radar_head_result_deserialize(self, outs):
+        outs_ = []
+        keys = ['sec_reg', 'sec_rot', 'sec_vel']
+        for head_id in range(len(outs) // 3):
+            outs_head = [dict()]
+            for kid, key in enumerate(keys):
+                outs_head[0][key] = outs[head_id * 3 + kid]
+            outs_.append(outs_head)
+        return outs_
+# radar_pc = data['radar_feat'][0]
+pts_out_dict = pts_head_result_deserialize(pts_outs)
+session3 = session3 = ort.InferenceSession("hvdet_fuse_stage3", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])        
+radar_feat = get_valid_radar_feat(pts_out_dict, radar_pc, radar_cfg)
+sec_feats = torch.cat([bev_feat, radar_feat], 1) 
+output_names=[f'radar_out_{j}' for j in range(15)]
+
+sess3_radar_out=session3.run(output_names, 
+                                            {
+                                            'sec_feat':sec_feats.cpu().numpy(),
+                                            }) 
+for i in range(len(sess3_radar_out)):
+  sess3_radar_out[i] = torch.tensor(sess3_radar_out[i]).to(pts_outs[0].device)
+pts_outs = pts_head_result_deserialize(pts_outs)
+sec_outs=radar_head_result_deserialize(sess3_radar_out)
+    
 
 
