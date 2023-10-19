@@ -313,7 +313,7 @@ class RadarPointCloudWithVelocity(RadarPointCloud):
 
 
 def get_valid_radar_feat(outputs, radar_pc, cfg):
-    bbox_num = cfg.bbox_num
+    bbox_num = cfg["box_num"]
     ## Calculate values for the new pc_hm
     # radar-pc: b * n * 5
     # convert to bev grid
@@ -330,7 +330,7 @@ def get_valid_radar_feat(outputs, radar_pc, cfg):
         task_out = task_out[0]
 
         heat = task_out['heatmap'].detach()
-        wh = cfg.img_feats_bbox_dims  
+        wh = cfg["img_feats_bbox_dims"]  
 
         wh[0] = wh[0] / cfg['voxel_size'][0] / cfg[  
                     'out_size_factor']
