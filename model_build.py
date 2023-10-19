@@ -270,28 +270,31 @@ sess1_1_bev_feat = session1_1.run(['out_bev_feat'],
 bev_feat_list.append(sess1_1_bev_feat[0])
 #remove code in this section(start to end) when you are iterating the model throgh the frames in datapipeline
 #-----------------start--------------------
-sample_shape = (1, 2176, 256, 256)
-bev_feat_list = np.random.rand(*sample_shape)
+multi_bev_feat = np.random.rand(B, 2176, 256, 256).astype(np.float32)
 #-----------------End----------------------
-multi_bev_feat = np.concatenate(bev_feat_list, axis=1)
+# multi_bev_feat = np.concatenate(bev_feat_list, axis=1)
+
 print("----------------------------------")
-print("stage1_1:",multi_bev_feat.shape)
+print("stage1_1:",len(sess1_1_bev_feat))
 print("----------------------------------")
 output_names=['bev_feat'] + [f'output_{j}' for j in range(36)]
 model_path2 = "hvdet_fuse_stage2.onnx"
 session2 = ort.InferenceSession(model_path2, providers=['CUDAExecutionProvider','CPUExecutionProvider'])
 
-
+print("------stage2----------")
 sess2_out = session2.run(output_names, 
                                             {
                                             'multi_bev_feat':multi_bev_feat,
                                             }) 
+print(len(sess2_out))    
+print("-----------------------")                                       
 for i in range(len(sess2_out)):
   sess2_out[i] = torch.tensor(sess2_out[i]).cuda()
 bev_feat = sess2_out[0]
 pts_outs = sess2_out[1:]
-
-def pts_head_result_deserialize(self, outs):
+print("------------")
+print("Bev_feat:",bev_feat.shape)
+def pts_head_result_deserialize(outs):
         outs_ = []
         keys = ['reg', 'height', 'dim', 'rot', 'vel', 'heatmap']
         for head_id in range(len(outs) // 6):
@@ -303,7 +306,7 @@ def pts_head_result_deserialize(self, outs):
 
 from process_radar import get_valid_radar_feat 
 
-def radar_head_result_deserialize(self, outs):
+def radar_head_result_deserialize(outs):
         outs_ = []
         keys = ['sec_reg', 'sec_rot', 'sec_vel']
         for head_id in range(len(outs) // 3):
