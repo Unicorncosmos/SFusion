@@ -1,5 +1,6 @@
 # SFusion
-#Interimage + LSSViewTransformer + stage1 + stage2
+Full model
+#Interimage + LSSViewTransformer + bevpoolv2 + stage1 + stage2 + stage3
 
 **Step 1.** Install requirement
 ```shell
