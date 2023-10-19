@@ -599,7 +599,7 @@ radar_pc= [
           76.19999694824219
         ]
 pts_out_dict = pts_head_result_deserialize(pts_outs)
-session3 = session3 = ort.InferenceSession("hvdet_fuse_stage3", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])        
+session3 = session3 = ort.InferenceSession("hvdet_fuse_stage3.onnx", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])        
 radar_feat = get_valid_radar_feat(pts_out_dict, radar_pc, radar_cfg)
 sec_feats = torch.cat([bev_feat, radar_feat], 1) 
 output_names=[f'radar_out_{j}' for j in range(15)]
