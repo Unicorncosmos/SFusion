@@ -334,8 +334,8 @@ def get_valid_radar_feat(outputs, radar_pc, cfg):
 
         wh[0] = wh[0] / cfg['voxel_size'][0] / cfg[  
                     'out_size_factor']
-        wh[1] = wh[1] / cfg['voxel_size'][1] / cfg[
-                    'out_size_factor']
+        # wh[1] = wh[1] / cfg['voxel_size'][1] / cfg[
+        #             'out_size_factor']
         batch, cat, height, width = heat.size()
         reg = task_out['reg'].detach()
         scores, inds, clses, ys0, xs0 = _topk(heat, K=bbox_num)
@@ -345,9 +345,9 @@ def get_valid_radar_feat(outputs, radar_pc, cfg):
         ys = ys0.view(batch, bbox_num, 1) + reg[:, :, 1].view(batch, bbox_num, 1)
 
         bboxes = torch.cat([torch.floor(xs - wh[0] / 2),  
-                            torch.floor(ys - wh[1] / 2),
-                            torch.ceil(xs + wh[0] / 2),
-                            torch.ceil(ys + wh[1] / 2)], dim=2)  # B x K x 4
+  
+                            torch.ceil(xs + wh[0] / 2)
+                        ], dim=2)  # B x K x 4
         bboxes[bboxes<0] = 0
         bboxes[bboxes>feature_map_size[0]] = feature_map_size[0]
         if cfg['time_debug']:                              
@@ -357,16 +357,14 @@ def get_valid_radar_feat(outputs, radar_pc, cfg):
         for b_index, frame_radar_pc in enumerate(radar_pc):  
             if cfg['time_debug']:
                 batch_t = time.time()
-            bboxes_b = bboxes[b_index]
+           
             # valid_radar_pc = pick_valid_points_in_imgfeat_bboxes(bboxes_b, frame_radar_pc, cfg)
-            valid_radar_pc = pick_valid_points_in_imgfeat_bboxes_v2(bboxes_b, frame_radar_pc, cfg)
+            # valid_radar_pc = pick_valid_points_in_imgfeat_bboxes_v2(bboxes_b, frame_radar_pc, cfg)
             if cfg['time_debug']:
                 radar_pc_t = time.time()
                 l.warning("        getting valid radar pc in each frame spends {} sec.".format(radar_pc_t-batch_t))
-            if valid_radar_pc is None:  
-                continue
-            else:
-                update_radar_featmap(b_index, radar_feat, valid_radar_pc, cfg)
+            # if valid_radar_pc is None:  
+                # continue
     return radar_feat
 
 def pick_valid_points_in_imgfeat_bboxes(bboxes_b, frame_radar_pc, cfg):
