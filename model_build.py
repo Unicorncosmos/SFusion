@@ -313,7 +313,6 @@ def radar_head_result_deserialize(self, outs):
             outs_.append(outs_head)
         return outs_
 radar_pc= [
-        [
           2.799999952316284,
           3.200000047683716,
           4.199999809265137,
@@ -595,21 +594,24 @@ radar_pc= [
           77.80000305175781,
           80.19999694824219,
           76.19999694824219
-        ]]
+        ]
 pts_out_dict = pts_head_result_deserialize(pts_outs)
 session3 = session3 = ort.InferenceSession("hvdet_fuse_stage3", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])        
 radar_feat = get_valid_radar_feat(pts_out_dict, radar_pc, radar_cfg)
 sec_feats = torch.cat([bev_feat, radar_feat], 1) 
 output_names=[f'radar_out_{j}' for j in range(15)]
-
+print("session3 radar out -----------------------")
 sess3_radar_out=session3.run(output_names, 
                                             {
                                             'sec_feat':sec_feats.cpu().numpy(),
                                             }) 
+print(sess3_radar_out)                                            
 for i in range(len(sess3_radar_out)):
   sess3_radar_out[i] = torch.tensor(sess3_radar_out[i]).to(pts_outs[0].device)
 pts_outs = pts_head_result_deserialize(pts_outs)
 sec_outs=radar_head_result_deserialize(sess3_radar_out)
+print("---sec_outs-----")
+print("sec_outs:",sec_outs)
     
 
 
