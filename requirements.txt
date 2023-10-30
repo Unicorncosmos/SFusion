@@ -1,0 +1,7 @@
+!pip install mmcv==1.6.2
+!conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
+!git clone https://github.com/open-mmlab/mmdetection.git
+%cd mmdetection
+!git checkout v2.28.1
+!pip install -r requirements/build.txt
+!pip install -v -e .
